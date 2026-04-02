@@ -6,6 +6,7 @@
   "issue_tracker": "https://github.com/baeksj/ha-kma-weather/issues",
   "codeowners": ["@baeksj"],
   "config_flow": true,
+  "integration_type": "hub",
   "iot_class": "cloud_polling",
   "requirements": [],
   "loggers": ["custom_components.kma_weather"]
