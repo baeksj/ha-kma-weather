@@ -14,7 +14,6 @@ from .area_lookup import nearest_area_codes
 from .const import (
     CONF_API_KEY,
     CONF_AREA_NO,
-    CONF_ENV_API_KEY,
     CONF_ENV_KIND,
     CONF_LOCATION_NAME,
     CONF_MAX_CONSECUTIVE_FAILURES,
@@ -153,10 +152,9 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
             )
 
         available = {
-            "uv": "자외선지수 (기상청_생활기상지수 조회서비스(3.0) / getUVIdxV4)",
-            "air_diffusion": "대기확산지수 (기상청_생활기상지수 조회서비스(3.0) / getAirDiffusionIdxV4)",
+            "living_weather": "생활기상지수 조회서비스(3.0) → UV, 대기확산지수 센서 추가",
         }
-        existing = self.entry.options.get("environment_keys", {})
+        existing = self.entry.options.get("enabled_api_groups", [])
         available = {k: v for k, v in available.items() if k not in existing}
 
         schema_dict = {
@@ -178,29 +176,26 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
     async def async_step_add_environment(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         kind = self._pending_kind
         descriptions = {
-            "uv": "추가 환경정보: 자외선지수\n필요 API: 기상청_생활기상지수 조회서비스(3.0)\n사용 endpoint: getUVIdxV4",
-            "air_diffusion": "추가 환경정보: 대기확산지수\n필요 API: 기상청_생활기상지수 조회서비스(3.0)\n사용 endpoint: getAirDiffusionIdxV4",
+            "living_weather": "추가 API: 기상청_생활기상지수 조회서비스(3.0)\n추가되는 센서: KMA UV Index, KMA Air Diffusion Index\nAPI 키는 기본 설치 시 입력한 공통 키를 재사용합니다.",
         }
         if kind is None:
             return await self.async_step_init()
 
-        existing = dict(self.entry.options.get("environment_keys", {}))
+        existing = list(self.entry.options.get("enabled_api_groups", []))
         if kind in existing:
             return await self.async_step_init()
 
         if user_input is not None:
-            existing[kind] = user_input[CONF_ENV_API_KEY]
+            existing.append(kind)
             return self.async_create_entry(
                 title="",
                 data={
                     **self.entry.options,
-                    "environment_keys": existing,
+                    "enabled_api_groups": existing,
                 },
             )
 
-        schema = vol.Schema({
-            vol.Required(CONF_ENV_API_KEY): str,
-        })
+        schema = vol.Schema({})
         return self.async_show_form(
             step_id="add_environment",
             data_schema=schema,

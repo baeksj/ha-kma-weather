@@ -13,7 +13,6 @@ CONF_MAX_CONSECUTIVE_FAILURES = "max_consecutive_failures"
 CONF_ZONE = "zone_entity_id"
 CONF_AREA_NO = "area_no"
 CONF_ENV_KIND = "env_kind"
-CONF_ENV_API_KEY = "env_api_key"
 
 DEFAULT_NAME = "KMA Weather"
 DEFAULT_SCAN_INTERVAL = 600

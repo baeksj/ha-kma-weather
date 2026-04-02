@@ -38,9 +38,7 @@
       "add_environment": {
         "title": "Add environmental data",
         "description": "{details}",
-        "data": {
-          "env_api_key": "API key"
-        }
+        "data": {}
       }
     }
   }

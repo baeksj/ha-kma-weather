@@ -64,18 +64,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "living": {},
     }
 
-    env_keys = entry.options.get("environment_keys", {})
+    enabled_groups = entry.options.get("enabled_api_groups", [])
     area_no = data.get(CONF_AREA_NO)
-    for kind, api_key in env_keys.items():
-        if not area_no:
-            continue
-        living_api = KmaLivingWeatherApi(hass, api_key, str(area_no))
-        living_coordinator = KmaLivingCoordinator(hass, living_api, kind)
-        await living_coordinator.async_config_entry_first_refresh()
-        runtime["living"][kind] = {
-            "api": living_api,
-            "coordinator": living_coordinator,
-        }
+    base_api_key = data.get(CONF_API_KEY)
+    if area_no and base_api_key and "living_weather" in enabled_groups:
+        for kind in ("uv", "air_diffusion"):
+            living_api = KmaLivingWeatherApi(hass, base_api_key, str(area_no))
+            living_coordinator = KmaLivingCoordinator(hass, living_api, kind)
+            await living_coordinator.async_config_entry_first_refresh()
+            runtime["living"][kind] = {
+                "api": living_api,
+                "coordinator": living_coordinator,
+            }
 
     hass.data[DOMAIN][entry.entry_id] = runtime
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

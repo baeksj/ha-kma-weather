@@ -38,9 +38,7 @@
       "add_environment": {
         "title": "환경정보 추가",
         "description": "{details}",
-        "data": {
-          "env_api_key": "API 키"
-        }
+        "data": {}
       }
     }
   }
