@@ -62,6 +62,45 @@ def midterm_stn_id_for_region(level1: str | None) -> str:
     return stn_id
 
 
+LEVEL1_TO_LAND_REG_ID = {
+    "서울특별시": "11B00000",
+    "인천광역시": "11B00000",
+    "경기도": "11B00000",
+    "강원특별자치도": "11D10000",
+    "강원도": "11D10000",
+    "충청북도": "11C10000",
+    "충청남도": "11C20000",
+    "대전광역시": "11C20000",
+    "세종특별자치시": "11C20000",
+    "전북특별자치도": "11F10000",
+    "전라북도": "11F10000",
+    "전라남도": "11F20000",
+    "광주광역시": "11F20000",
+    "경상북도": "11H10000",
+    "대구광역시": "11H10000",
+    "경상남도": "11H20000",
+    "부산광역시": "11H20000",
+    "울산광역시": "11H20000",
+    "제주특별자치도": "11G00000",
+}
+
+
+def midterm_land_reg_id_for_region(level1: str | None) -> str:
+    if not level1:
+        _LOGGER.warning(
+            "midterm_land_reg_id_for_region: level1 is empty, using Seoul default (11B00000)"
+        )
+        return "11B00000"
+    land_reg_id = LEVEL1_TO_LAND_REG_ID.get(level1)
+    if land_reg_id is None:
+        _LOGGER.warning(
+            "midterm_land_reg_id_for_region: unknown region '%s', using Seoul default (11B00000)",
+            level1,
+        )
+        return "11B00000"
+    return land_reg_id
+
+
 def midterm_reg_id_for_region(level1: str | None) -> str:
     if not level1:
         _LOGGER.warning("midterm_reg_id_for_region: level1 is empty, using Seoul default (11B10101)")

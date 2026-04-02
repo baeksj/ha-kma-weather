@@ -33,7 +33,7 @@ from .living_api import KmaLivingWeatherApi
 from .living_coordinator import KmaLivingCoordinator
 from .midterm_api import KmaMidtermApi
 from .midterm_coordinator import KmaMidtermCoordinator
-from .midterm_region import midterm_reg_id_for_region, midterm_stn_id_for_region
+from .midterm_region import midterm_land_reg_id_for_region, midterm_reg_id_for_region, midterm_stn_id_for_region
 from .pollen_api import KmaPollenApi
 from .pollen_coordinator import KmaPollenCoordinator
 
@@ -117,7 +117,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         runtime["group_status"][API_GROUP_LIVING_WEATHER] = {"ok": True}
 
     if area_no and base_api_key and API_GROUP_POLLEN in enabled_groups:
-        for kind in ("pine", "oak", "weed"):
+        # `getWeedPollenRiskIdxV3` is currently not available from the public API.
+        # Keep the supported subset enabled so the rest of the pollen group remains usable.
+        for kind in ("pine", "oak"):
             try:
                 pollen_api = KmaPollenApi(hass, base_api_key, str(area_no))
                 pollen_coordinator = KmaPollenCoordinator(
@@ -183,7 +185,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 stn_id = midterm_stn_id_for_region(runtime.get("region_level_1"))
                 reg_id = midterm_reg_id_for_region(runtime.get("region_level_1"))
-                midterm_api = KmaMidtermApi(hass, base_api_key, stn_id, reg_id)
+                land_reg_id = midterm_land_reg_id_for_region(runtime.get("region_level_1"))
+                midterm_api = KmaMidtermApi(hass, base_api_key, stn_id, reg_id, land_reg_id)
                 midterm_coordinator = KmaMidtermCoordinator(
                     hass,
                     midterm_api,
@@ -200,6 +203,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     "coordinator": midterm_coordinator,
                     "stn_id": stn_id,
                     "reg_id": reg_id,
+                    "land_reg_id": land_reg_id,
                 }
                 if not midterm_coordinator.last_update_success:
                     _LOGGER.warning(

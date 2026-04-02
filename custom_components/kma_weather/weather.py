@@ -136,6 +136,7 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
         except ValueError:
             return base_daily
 
+        land = midterm_coordinator.data.get("land") or {}
         merged = list(base_daily)
         for day in range(4, 11):
             forecast_date = (base_date + timedelta(days=day)).isoformat()
@@ -146,12 +147,47 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
                     datetime=forecast_date,
                     native_templow=_to_float_or_none(temperature.get(f"taMin{day}")),
                     native_temperature=_to_float_or_none(temperature.get(f"taMax{day}")),
-                    condition=None,
+                    condition=_midterm_condition(land, day),
+                    precipitation_probability=_midterm_rnst(land, day),
                 )
             )
 
         merged.sort(key=lambda item: item["datetime"])
         return merged
+
+
+_MIDTERM_WF_TO_CONDITION: dict[str, str] = {
+    "맑음": "sunny",
+    "구름많음": "partlycloudy",
+    "구름많고 비": "rainy",
+    "구름많고 눈": "snowy",
+    "구름많고 비/눈": "snowy-rainy",
+    "흐림": "cloudy",
+    "흐리고 비": "rainy",
+    "흐리고 눈": "snowy",
+    "흐리고 비/눈": "snowy-rainy",
+    "흐리고 강풍": "windy",
+}
+
+
+def _midterm_condition(land: dict, day: int) -> str | None:
+    """중기 육상예보 날씨 문자열을 HA 조건 코드로 변환. 3~7일은 오후 우선, 8~10일은 단일값."""
+    if day <= 7:
+        wf = land.get(f"wf{day}Pm") or land.get(f"wf{day}Am")
+    else:
+        wf = land.get(f"wf{day}")
+    return _MIDTERM_WF_TO_CONDITION.get(wf) if wf else None
+
+
+def _midterm_rnst(land: dict, day: int) -> int | None:
+    """중기 육상예보 강수확률 반환. 3~7일은 AM/PM 중 최대값."""
+    if day <= 7:
+        am = land.get(f"rnSt{day}Am")
+        pm = land.get(f"rnSt{day}Pm")
+        values = [int(v) for v in (am, pm) if v is not None]
+        return max(values) if values else None
+    val = land.get(f"rnSt{day}")
+    return int(val) if val is not None else None
 
 
 def _to_float_or_none(value) -> float | None:

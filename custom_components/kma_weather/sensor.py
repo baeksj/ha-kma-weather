@@ -106,7 +106,6 @@ async def async_setup_entry(
     for kind, name in (
         ("pine", "KMA Pine Pollen Risk"),
         ("oak", "KMA Oak Pollen Risk"),
-        ("weed", "KMA Weed Pollen Risk"),
     ):
         if kind in pollen:
             entities.append(KmaPollenValueSensor(entry, pollen[kind]["coordinator"], runtime, kind, name))
@@ -264,7 +263,11 @@ class KmaPollenValueSensor(_BaseKmaSensor):
 
     @property
     def native_value(self):
-        return _parse_int_or_none(self.coordinator.data.get("today"))
+        _, value = _pick_first_present(
+            self.coordinator.data,
+            ("today", "tomorrow", "dayaftertomorrow", "twodaysaftertomorrow"),
+        )
+        return _parse_int_or_none(value)
 
     @property
     def available(self):
@@ -277,10 +280,16 @@ class KmaPollenValueSensor(_BaseKmaSensor):
             "oak": "getOakPollenRiskIdxV3",
             "weed": "getWeedPollenRiskIdxV3",
         }.get(self.kind)
+        selected_key, selected_value = _pick_first_present(
+            self.coordinator.data,
+            ("today", "tomorrow", "dayaftertomorrow", "twodaysaftertomorrow"),
+        )
         attrs = {
             "required_api": "기상청_꽃가루농도위험지수 조회서비스(3.0)",
             "endpoint": endpoint,
             "area_no": self.runtime.get("area_no"),
+            "displayed_forecast_key": selected_key,
+            "displayed_forecast_value": _parse_int_or_none(selected_value),
             "risk_label_today": _pollen_risk_label(self.coordinator.data.get("today")),
             "risk_label_tomorrow": _pollen_risk_label(self.coordinator.data.get("tomorrow")),
             "risk_label_dayaftertomorrow": _pollen_risk_label(self.coordinator.data.get("dayaftertomorrow")),
@@ -392,8 +401,9 @@ class KmaMidtermTemperatureSensor(_BaseKmaSensor):
     @property
     def native_value(self):
         temperature = self.coordinator.data.get("temperature") or {}
-        key = "taMin4" if self.kind == "min" else "taMax4"
-        return temperature.get(key)
+        prefix = "taMin" if self.kind == "min" else "taMax"
+        _, value = _pick_first_present(temperature, tuple(f"{prefix}{day}" for day in range(4, 11)))
+        return _to_number_or_none(value)
 
     @property
     def available(self):
@@ -409,6 +419,12 @@ class KmaMidtermTemperatureSensor(_BaseKmaSensor):
             "tm_fc": self.coordinator.data.get("tmFc"),
         }
         prefix = "taMin" if self.kind == "min" else "taMax"
+        selected_key, selected_value = _pick_first_present(
+            temperature,
+            tuple(f"{prefix}{day}" for day in range(4, 11)),
+        )
+        attrs["displayed_forecast_key"] = selected_key
+        attrs["displayed_forecast_value"] = _to_number_or_none(selected_value)
         for day in range(4, 11):
             key = f"{prefix}{day}"
             if key in temperature:
@@ -449,3 +465,23 @@ def _pollen_risk_label(value: Any) -> str | None:
     if parsed is None:
         return None
     return labels.get(parsed, str(parsed))
+
+
+def _pick_first_present(data: dict[str, Any], keys: tuple[str, ...]) -> tuple[str | None, Any]:
+    for key in keys:
+        value = data.get(key)
+        if value not in (None, "", "-", "_", "N/A"):
+            return key, value
+    return None, None
+
+
+def _to_number_or_none(value: Any) -> int | float | None:
+    if value in (None, "", "-", "_", "N/A"):
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if numeric.is_integer():
+        return int(numeric)
+    return numeric

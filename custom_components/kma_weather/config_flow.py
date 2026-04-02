@@ -46,7 +46,7 @@ API_GROUP_DESCRIPTIONS = {
         "한국환경공단_에어코리아_대기오염정보 → PM10, PM2.5, O3, NO2, CO, SO2, 통합대기환경지수, 측정소 센서 추가"
     ),
     API_GROUP_POLLEN: (
-        "기상청_꽃가루농도위험지수 조회서비스(3.0) → 소나무, 참나무, 잡초류 꽃가루 위험지수 센서 추가"
+        "기상청_꽃가루농도위험지수 조회서비스(3.0) → 소나무, 참나무 꽃가루 위험지수 센서 추가"
     ),
     API_GROUP_MIDTERM_FORECAST: (
         "기상청_중기예보 조회서비스 → 중기예보 요약 센서 추가"
@@ -68,7 +68,7 @@ API_GROUP_DETAILS = {
     ),
     API_GROUP_POLLEN: (
         "추가 API: 기상청_꽃가루농도위험지수 조회서비스(3.0)\n"
-        "추가되는 센서: KMA Pine Pollen Risk, KMA Oak Pollen Risk, KMA Weed Pollen Risk\n"
+        "추가되는 센서: KMA Pine Pollen Risk, KMA Oak Pollen Risk\n"
         "행정구역 코드는 기본 설치 시 선택한 KMA 지역 코드를 재사용합니다.\n"
         "API 키는 기본 설치 시 입력한 공통 키를 재사용합니다."
     ),

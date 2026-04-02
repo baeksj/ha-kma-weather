@@ -15,21 +15,24 @@ class KmaMidtermApiError(Exception):
 
 
 class KmaMidtermApi:
-    def __init__(self, hass, api_key: str, stn_id: str, reg_id: str) -> None:
+    def __init__(self, hass, api_key: str, stn_id: str, reg_id: str, land_reg_id: str) -> None:
         self.hass = hass
         self.api_key = api_key
         self.stn_id = stn_id
         self.reg_id = reg_id
+        self.land_reg_id = land_reg_id
         self._session = async_get_clientsession(hass)
 
     async def async_fetch_all(self) -> dict:
         tm_fc = self._latest_tm_fc()
         summary = await self._async_request("getMidFcst", {"stnId": self.stn_id, "tmFc": tm_fc})
         temperature = await self._async_request("getMidTa", {"regId": self.reg_id, "tmFc": tm_fc})
+        land = await self._async_request("getMidLandFcst", {"regId": self.land_reg_id, "tmFc": tm_fc})
         return {
             "tmFc": tm_fc,
             "summary": summary,
             "temperature": temperature,
+            "land": land,
         }
 
     async def _async_request(self, endpoint: str, extra_params: dict[str, str]) -> dict:
