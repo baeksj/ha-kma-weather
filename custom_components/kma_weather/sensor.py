@@ -5,7 +5,7 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -102,6 +102,15 @@ async def async_setup_entry(
             )
         )
 
+    pollen = runtime.get("pollen", {})
+    for kind, name in (
+        ("pine", "KMA Pine Pollen Risk"),
+        ("oak", "KMA Oak Pollen Risk"),
+        ("weed", "KMA Weed Pollen Risk"),
+    ):
+        if kind in pollen:
+            entities.append(KmaPollenValueSensor(entry, pollen[kind]["coordinator"], runtime, kind, name))
+
     air_quality = runtime.get("air_quality")
     if air_quality:
         air_coordinator = air_quality["coordinator"]
@@ -110,6 +119,12 @@ async def async_setup_entry(
             KmaAirQualityValueSensor(entry, air_coordinator, runtime, description)
             for description in AIR_QUALITY_SENSORS
         )
+
+    midterm = runtime.get("midterm")
+    if midterm:
+        entities.append(KmaMidtermSummarySensor(entry, midterm["coordinator"], runtime))
+        entities.append(KmaMidtermTemperatureSensor(entry, midterm["coordinator"], runtime, "min"))
+        entities.append(KmaMidtermTemperatureSensor(entry, midterm["coordinator"], runtime, "max"))
 
     async_add_entities(entities)
 
@@ -224,13 +239,13 @@ class KmaAirStationSensor(_BaseKmaSensor):
 
     @property
     def available(self):
-        return self.coordinator.last_update_success
+        return self.runtime.get("air_station") is not None
 
     @property
     def extra_state_attributes(self):
         station = self.runtime.get("air_station") or {}
         attrs = {
-            "required_api": "에어코리아 대기오염정보 조회서비스",
+            "required_api": "한국환경공단_에어코리아_대기오염정보",
             "endpoint": "getMsrstnAcctoRltmMesureDnsty",
         }
         for key in ("addr", "mang_name", "item", "year", "region_hint", "geo_distance_km", "lat", "lon"):
@@ -238,6 +253,40 @@ class KmaAirStationSensor(_BaseKmaSensor):
                 attrs[key] = station.get(key)
         if self.coordinator.data:
             attrs["data_time"] = self.coordinator.data.get("dataTime")
+        return attrs
+
+
+class KmaPollenValueSensor(_BaseKmaSensor):
+    def __init__(self, entry, coordinator, runtime, kind: str, name: str):
+        super().__init__(entry, coordinator, runtime, kind, name)
+        self.kind = kind
+        self.coordinator = coordinator
+
+    @property
+    def native_value(self):
+        return _parse_int_or_none(self.coordinator.data.get("today"))
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
+
+    @property
+    def extra_state_attributes(self):
+        endpoint = {
+            "pine": "getPinePollenRiskIdxV3",
+            "oak": "getOakPollenRiskIdxV3",
+            "weed": "getWeedPollenRiskIdxV3",
+        }.get(self.kind)
+        attrs = {
+            "required_api": "기상청_꽃가루농도위험지수 조회서비스(3.0)",
+            "endpoint": endpoint,
+            "area_no": self.runtime.get("area_no"),
+            "risk_label_today": _pollen_risk_label(self.coordinator.data.get("today")),
+            "risk_label_tomorrow": _pollen_risk_label(self.coordinator.data.get("tomorrow")),
+            "risk_label_dayaftertomorrow": _pollen_risk_label(self.coordinator.data.get("dayaftertomorrow")),
+            "risk_label_twodaysaftertomorrow": _pollen_risk_label(self.coordinator.data.get("twodaysaftertomorrow")),
+        }
+        attrs.update(self.coordinator.data)
         return attrs
 
 
@@ -268,7 +317,7 @@ class KmaAirQualityValueSensor(_BaseKmaSensor):
     @property
     def extra_state_attributes(self):
         attrs = {
-            "required_api": "에어코리아 대기오염정보 조회서비스",
+            "required_api": "한국환경공단_에어코리아_대기오염정보",
             "endpoint": "getMsrstnAcctoRltmMesureDnsty",
             "station_name": (self.runtime.get("air_station") or {}).get("station_name"),
             "data_time": self.coordinator.data.get("dataTime"),
@@ -302,3 +351,101 @@ class KmaAirQualityValueSensor(_BaseKmaSensor):
                 return int(numeric)
             return numeric
         return value
+
+
+class KmaMidtermSummarySensor(_BaseKmaSensor):
+    def __init__(self, entry, coordinator, runtime):
+        super().__init__(entry, coordinator, runtime, "midterm_summary", "KMA Mid-term Forecast Summary")
+        self.coordinator = coordinator
+
+    @property
+    def native_value(self):
+        return (self.coordinator.data.get("summary") or {}).get("wfSv")
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
+
+    @property
+    def extra_state_attributes(self):
+        attrs = {
+            "required_api": "기상청_중기예보 조회서비스",
+            "endpoint": "getMidFcst",
+            "stn_id": (self.runtime.get("midterm") or {}).get("stn_id"),
+            "reg_id": (self.runtime.get("midterm") or {}).get("reg_id"),
+            "tm_fc": self.coordinator.data.get("tmFc"),
+        }
+        attrs.update(self.coordinator.data.get("summary") or {})
+        return attrs
+
+
+class KmaMidtermTemperatureSensor(_BaseKmaSensor):
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, entry, coordinator, runtime, kind: str):
+        name = "KMA Mid-term Min Temperature" if kind == "min" else "KMA Mid-term Max Temperature"
+        suffix = "midterm_min_temp" if kind == "min" else "midterm_max_temp"
+        super().__init__(entry, coordinator, runtime, suffix, name)
+        self.coordinator = coordinator
+        self.kind = kind
+
+    @property
+    def native_value(self):
+        temperature = self.coordinator.data.get("temperature") or {}
+        key = "taMin4" if self.kind == "min" else "taMax4"
+        return temperature.get(key)
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
+
+    @property
+    def extra_state_attributes(self):
+        temperature = self.coordinator.data.get("temperature") or {}
+        attrs = {
+            "required_api": "기상청_중기예보 조회서비스",
+            "endpoint": "getMidTa",
+            "reg_id": (self.runtime.get("midterm") or {}).get("reg_id"),
+            "tm_fc": self.coordinator.data.get("tmFc"),
+        }
+        prefix = "taMin" if self.kind == "min" else "taMax"
+        for day in range(4, 11):
+            key = f"{prefix}{day}"
+            if key in temperature:
+                attrs[key] = temperature.get(key)
+        return attrs
+
+
+def _pick_primary_value(data: dict[str, Any], preferred_keys: tuple[str, ...]) -> Any:
+    for key in preferred_keys:
+        value = data.get(key)
+        if value not in (None, "", "-", "_", "N/A"):
+            return value
+    for key, value in data.items():
+        if key in {"date", "time", "areaNo"}:
+            continue
+        if value not in (None, "", "-", "_", "N/A"):
+            return value
+    return None
+
+
+def _parse_int_or_none(value: Any) -> int | None:
+    if value in (None, "", "-", "_", "N/A"):
+        return None
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _pollen_risk_label(value: Any) -> str | None:
+    parsed = _parse_int_or_none(value)
+    labels = {
+        0: "낮음",
+        1: "보통",
+        2: "높음",
+        3: "매우 높음",
+    }
+    if parsed is None:
+        return None
+    return labels.get(parsed, str(parsed))

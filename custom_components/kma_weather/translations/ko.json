@@ -22,23 +22,22 @@
       "zone_not_found": "선택한 zone 엔티티를 찾을 수 없습니다.",
       "zone_missing_coordinates": "선택한 zone 엔티티에 위도/경도 속성이 없습니다.",
       "area_code_not_found": "선택한 zone 좌표를 KMA 지역 코드로 매핑할 수 없습니다.",
-      "invalid_area_choice": "제시된 KMA 지역 후보 중 하나를 선택해야 합니다."
+      "invalid_area_choice": "제시된 KMA 지역 후보 중 하나를 선택해야 합니다.",
+      "air_station_not_found": "저장된 좌표를 기준으로 가까운 에어코리아 측정소를 찾을 수 없습니다."
     }
   },
   "options": {
+    "error": {
+      "air_station_not_found": "저장된 좌표를 기준으로 가까운 에어코리아 측정소를 찾을 수 없습니다."
+    },
     "step": {
       "init": {
         "title": "KMA Weather 옵션",
-        "description": "연속 API 실패 허용 횟수를 설정하고, 필요하면 API 그룹을 한 번에 하나씩 추가할 수 있습니다. 추가 API 그룹도 기본 설치 시 입력한 공통 API 키를 재사용하며, 각 그룹은 관련 센서를 자동 생성합니다. 불필요한 엔티티는 Home Assistant에서 비활성화하면 됩니다.",
+        "description": "연속 API 실패 허용 횟수를 설정하고, API 그룹을 활성화하거나 비활성화할 수 있습니다. 추가 API 그룹도 기본 설치 시 입력한 공통 API 키를 재사용하며, 각 그룹은 관련 센서를 자동 생성합니다. 비활성화한 그룹의 센서는 reload 후 제거됩니다.\n\n{details}",
         "data": {
           "max_consecutive_failures": "최대 연속 API 실패 허용 횟수",
-          "env_kind": "API 그룹 추가"
+          "enabled_api_groups": "활성화할 API 그룹"
         }
-      },
-      "add_environment": {
-        "title": "API 그룹 추가",
-        "description": "{details}",
-        "data": {}
       }
     }
   }

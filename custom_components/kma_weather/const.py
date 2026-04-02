@@ -13,6 +13,7 @@ CONF_MAX_CONSECUTIVE_FAILURES = "max_consecutive_failures"
 CONF_ZONE = "zone_entity_id"
 CONF_AREA_NO = "area_no"
 CONF_ENV_KIND = "env_kind"
+CONF_ENABLED_API_GROUPS = "enabled_api_groups"
 
 DEFAULT_NAME = "KMA Weather"
 DEFAULT_SCAN_INTERVAL = 600
@@ -21,6 +22,13 @@ KMA_API_BASE = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
 KMA_LIVING_API_BASE = "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4"
 AIRKOREA_API_BASE = "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc"
 AIRKOREA_API_VERSION = "1.3"
+KMA_POLLEN_API_BASE = "https://apis.data.go.kr/1360000/HealthWthrIdxServiceV3"
+KMA_MIDTERM_API_BASE = "https://apis.data.go.kr/1360000/MidFcstInfoService"
+
+API_GROUP_LIVING_WEATHER = "living_weather"
+API_GROUP_AIR_QUALITY = "air_quality"
+API_GROUP_POLLEN = "pollen"
+API_GROUP_MIDTERM_FORECAST = "midterm_forecast"
 
 ATTR_HOURLY_FORECAST = "hourly_forecast"
 ATTR_DAILY_FORECAST = "daily_forecast"

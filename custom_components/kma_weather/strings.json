@@ -22,23 +22,22 @@
       "zone_not_found": "Selected zone entity was not found.",
       "zone_missing_coordinates": "The selected zone does not have latitude/longitude attributes.",
       "area_code_not_found": "Could not map the selected zone coordinates to a KMA area code.",
-      "invalid_area_choice": "Choose one of the suggested KMA area candidates."
+      "invalid_area_choice": "Choose one of the suggested KMA area candidates.",
+      "air_station_not_found": "Could not map the saved coordinates to a nearby AirKorea station."
     }
   },
   "options": {
+    "error": {
+      "air_station_not_found": "Could not map the saved coordinates to a nearby AirKorea station."
+    },
     "step": {
       "init": {
         "title": "KMA Weather options",
-        "description": "Control failure tolerance and optionally add one API group at a time. The base KMA API key is reused for all supported add-on groups. Group bundles create all related sensors automatically, and unneeded entities can be disabled later in Home Assistant.",
+        "description": "Control failure tolerance and enable or disable API groups. The base KMA API key is reused for all supported add-on groups. Group bundles create all related sensors automatically, and disabled groups remove their related sensors after reload.\n\n{details}",
         "data": {
           "max_consecutive_failures": "Max consecutive API failures",
-          "env_kind": "Add API group"
+          "enabled_api_groups": "Enabled API groups"
         }
-      },
-      "add_environment": {
-        "title": "Add API group",
-        "description": "{details}",
-        "data": {}
       }
     }
   }
