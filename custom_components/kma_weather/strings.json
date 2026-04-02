@@ -13,7 +13,8 @@
     },
     "error": {
       "zone_not_found": "Selected zone entity was not found.",
-      "zone_missing_coordinates": "The selected zone does not have latitude/longitude attributes."
+      "zone_missing_coordinates": "The selected zone does not have latitude/longitude attributes.",
+      "area_code_not_found": "Could not map the selected zone coordinates to a KMA area code."
     }
   },
   "options": {

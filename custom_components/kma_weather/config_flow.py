@@ -10,8 +10,10 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
+from .area_lookup import nearest_area_code
 from .const import (
     CONF_API_KEY,
+    CONF_AREA_NO,
     CONF_LOCATION_NAME,
     CONF_MAX_CONSECUTIVE_FAILURES,
     CONF_NX,
@@ -29,6 +31,15 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_API_KEY): str,
+                vol.Optional(CONF_LOCATION_NAME, default=DEFAULT_NAME): str,
+                vol.Required(CONF_ZONE): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="zone")
+                ),
+            }
+        )
 
         if user_input is not None:
             title = user_input.get(CONF_LOCATION_NAME) or DEFAULT_NAME
@@ -50,6 +61,15 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data[CONF_NX] = nx
                     data[CONF_NY] = ny
 
+                    area = nearest_area_code(float(latitude), float(longitude))
+                    if area is None:
+                        errors["base"] = "area_code_not_found"
+                    else:
+                        data[CONF_AREA_NO] = area["area_no"]
+
+                    if errors:
+                        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
                     await self.async_set_unique_id(f"{data[CONF_NX]}_{data[CONF_NY]}")
                     self._abort_if_unique_id_configured()
                     return self.async_create_entry(
@@ -60,15 +80,6 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         },
                     )
 
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_API_KEY): str,
-                vol.Optional(CONF_LOCATION_NAME, default=DEFAULT_NAME): str,
-                vol.Required(CONF_ZONE): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="zone")
-                ),
-            }
-        )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod

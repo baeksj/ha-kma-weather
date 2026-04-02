@@ -8,6 +8,7 @@ from homeassistant.helpers.typing import ConfigType
 from .api import KmaWeatherApi
 from .const import (
     CONF_API_KEY,
+    CONF_AREA_NO,
     CONF_LOCATION_NAME,
     CONF_MAX_CONSECUTIVE_FAILURES,
     CONF_NX,
@@ -54,6 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "coordinator": coordinator,
         "title": data.get(CONF_LOCATION_NAME) or entry.title,
         "grid": {"nx": int(nx), "ny": int(ny)},
+        "area_no": data.get(CONF_AREA_NO),
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))

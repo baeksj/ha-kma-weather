@@ -11,6 +11,7 @@ CONF_NY = "ny"
 CONF_LOCATION_NAME = "location_name"
 CONF_MAX_CONSECUTIVE_FAILURES = "max_consecutive_failures"
 CONF_ZONE = "zone_entity_id"
+CONF_AREA_NO = "area_no"
 
 DEFAULT_NAME = "KMA Weather"
 DEFAULT_SCAN_INTERVAL = 600
