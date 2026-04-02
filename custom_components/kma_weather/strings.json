@@ -9,12 +9,20 @@
           "location_name": "Location name",
           "zone_entity_id": "Zone"
         }
+      },
+      "area_choice": {
+        "title": "Choose KMA area",
+        "description": "Select one of the three nearest KMA administrative area candidates for living weather indices.",
+        "data": {
+          "area_no": "KMA area candidate"
+        }
       }
     },
     "error": {
       "zone_not_found": "Selected zone entity was not found.",
       "zone_missing_coordinates": "The selected zone does not have latitude/longitude attributes.",
-      "area_code_not_found": "Could not map the selected zone coordinates to a KMA area code."
+      "area_code_not_found": "Could not map the selected zone coordinates to a KMA area code.",
+      "invalid_area_choice": "Choose one of the suggested KMA area candidates."
     }
   },
   "options": {

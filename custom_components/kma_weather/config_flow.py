@@ -10,7 +10,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from .area_lookup import nearest_area_code
+from .area_lookup import nearest_area_codes
 from .const import (
     CONF_API_KEY,
     CONF_AREA_NO,
@@ -28,6 +28,10 @@ from .grid import latlon_to_grid
 
 class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    def __init__(self) -> None:
+        self._pending_data: dict[str, Any] = {}
+        self._area_candidates: list[dict[str, Any]] = []
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}
@@ -61,26 +65,56 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data[CONF_NX] = nx
                     data[CONF_NY] = ny
 
-                    area = nearest_area_code(float(latitude), float(longitude))
-                    if area is None:
+                    candidates = nearest_area_codes(float(latitude), float(longitude), limit=3)
+                    if not candidates:
                         errors["base"] = "area_code_not_found"
                     else:
-                        data[CONF_AREA_NO] = area["area_no"]
+                        self._pending_data = data
+                        self._area_candidates = candidates
+                        return await self.async_step_area_choice()
 
                     if errors:
                         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
-                    await self.async_set_unique_id(f"{data[CONF_NX]}_{data[CONF_NY]}")
-                    self._abort_if_unique_id_configured()
-                    return self.async_create_entry(
-                        title=title,
-                        data=data,
-                        options={
-                            CONF_MAX_CONSECUTIVE_FAILURES: DEFAULT_MAX_CONSECUTIVE_FAILURES,
-                        },
-                    )
-
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+    async def async_step_area_choice(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        errors: dict[str, str] = {}
+        options = {}
+        for item in self._area_candidates:
+            key = item["area_no"]
+            label = (
+                f"{item['level1']} {item['level2']} {item['level3']} "
+                f"(code={item['area_no']}, nx={item['nx']}, ny={item['ny']}, "
+                f"{item['geo_distance_km']:.3f}km)"
+            )
+            options[key] = label
+
+        if user_input is not None:
+            selected = user_input.get(CONF_AREA_NO)
+            chosen = next((item for item in self._area_candidates if item["area_no"] == selected), None)
+            if chosen is None:
+                errors["base"] = "invalid_area_choice"
+            else:
+                data = dict(self._pending_data)
+                data[CONF_AREA_NO] = chosen["area_no"]
+                data["region_level_1"] = chosen["level1"]
+                data["region_level_2"] = chosen["level2"]
+                data["region_level_3"] = chosen["level3"]
+                await self.async_set_unique_id(f"{data[CONF_NX]}_{data[CONF_NY]}_{data[CONF_AREA_NO]}")
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title=data.get(CONF_LOCATION_NAME) or DEFAULT_NAME,
+                    data=data,
+                    options={
+                        CONF_MAX_CONSECUTIVE_FAILURES: DEFAULT_MAX_CONSECUTIVE_FAILURES,
+                    },
+                )
+
+        schema = vol.Schema({
+            vol.Required(CONF_AREA_NO): vol.In(options)
+        })
+        return self.async_show_form(step_id="area_choice", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
