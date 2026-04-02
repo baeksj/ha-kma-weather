@@ -66,7 +66,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         config_entry=entry,
         max_consecutive_failures=max_failures,
     )
-    await coordinator.async_config_entry_first_refresh()
+    await coordinator.async_refresh()
+    if not coordinator.last_update_success:
+        _LOGGER.warning("KMA Weather initial data fetch failed, will retry on next update cycle")
 
     air_station = await async_nearest_air_station(hass, latitude, longitude)
 
@@ -212,9 +214,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+    try:
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    except ValueError:
+        _LOGGER.debug(
+            "Platforms were not registered for entry %s, skipping platform unload",
+            entry.entry_id,
+        )
+        unload_ok = True
+    hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok
 
 

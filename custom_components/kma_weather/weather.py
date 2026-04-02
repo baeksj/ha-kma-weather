@@ -52,25 +52,34 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
         }
 
     @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success and bool(self.coordinator.data)
+
+    def _current(self) -> dict:
+        return (self.coordinator.data or {}).get("current", {})
+
+    @property
     def condition(self) -> str | None:
-        return self.coordinator.data["current"].get("condition")
+        return self._current().get("condition")
 
     @property
     def native_temperature(self) -> float | None:
-        return self.coordinator.data["current"].get("temperature")
+        return self._current().get("temperature")
 
     @property
     def humidity(self) -> int | None:
-        value = self.coordinator.data["current"].get("humidity")
+        value = self._current().get("humidity")
         return int(value) if value is not None else None
 
     @property
     def native_wind_speed(self) -> float | None:
-        return self.coordinator.data["current"].get("wind_speed")
+        return self._current().get("wind_speed")
 
     @property
     def extra_state_attributes(self) -> dict:
-        current = self.coordinator.data["current"]
+        if not self.coordinator.data:
+            return {}
+        current = self._current()
         daily_forecast = self._merged_daily_forecast()
         return {
             "hourly_forecast": self.coordinator.data.get(ATTR_HOURLY_FORECAST, []),
@@ -92,12 +101,16 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
         }
 
     async def async_forecast_hourly(self) -> list[Forecast] | None:
+        if not self.coordinator.data:
+            return None
         return self.coordinator.data.get(ATTR_HOURLY_FORECAST)
 
     async def async_forecast_daily(self) -> list[Forecast] | None:
         return self._merged_daily_forecast()
 
     def _merged_daily_forecast(self) -> list[Forecast]:
+        if not self.coordinator.data:
+            return []
         base_daily = list(self.coordinator.data.get(ATTR_DAILY_FORECAST, []))
         existing_dates = {
             item["datetime"]
