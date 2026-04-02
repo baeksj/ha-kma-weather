@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KMA Weather",
+        "description": "Enter your KMA API key and choose a zone entity. The integration reads that zone's latitude/longitude and converts it to KMA grid coordinates.",
+        "data": {
+          "api_key": "API key",
+          "location_name": "Location name",
+          "zone_entity_id": "Zone"
+        }
+      }
+    },
+    "error": {
+      "zone_not_found": "Selected zone entity was not found.",
+      "zone_missing_coordinates": "The selected zone does not have latitude/longitude attributes."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "KMA Weather options",
+        "description": "Control how many consecutive KMA API failures are tolerated before the entity becomes unavailable.",
+        "data": {
+          "max_consecutive_failures": "Max consecutive API failures"
+        }
+      }
+    }
+  }
+}

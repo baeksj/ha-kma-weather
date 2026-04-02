@@ -1,0 +1,12 @@
+{
+  "domain": "kma_weather",
+  "name": "KMA Weather",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://www.data.go.kr/",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "loggers": ["custom_components.kma_weather"],
+  "requirements": [],
+  "version": "0.1.0"
+}

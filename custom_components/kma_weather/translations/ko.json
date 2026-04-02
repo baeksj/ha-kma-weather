@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KMA Weather",
+        "description": "KMA API 키를 입력하고 zone 엔티티를 선택하세요. 해당 zone의 위도/경도를 읽어 기상청 격자로 자동 변환합니다.",
+        "data": {
+          "api_key": "API 키",
+          "location_name": "위치 이름",
+          "zone_entity_id": "Zone"
+        }
+      }
+    },
+    "error": {
+      "zone_not_found": "선택한 zone 엔티티를 찾을 수 없습니다.",
+      "zone_missing_coordinates": "선택한 zone 엔티티에 위도/경도 속성이 없습니다."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "KMA Weather 옵션",
+        "description": "연속 API 실패 허용 횟수를 설정합니다. 허용 범위 내에서는 마지막 정상 데이터를 유지합니다.",
+        "data": {
+          "max_consecutive_failures": "최대 연속 API 실패 허용 횟수"
+        }
+      }
+    }
+  }
+}
