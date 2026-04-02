@@ -45,6 +45,13 @@ HACS Custom Repository로 설치할 수 있도록 구성했습니다.
    - location name (optional)
    - a `zone` entity with latitude/longitude attributes
 
+## Release checklist
+
+- Keep `custom_components/kma_weather/manifest.json` `version` in sync with the Git tag/release version.
+- Add a GitHub repository description before publishing the repository to HACS.
+- Add GitHub topics such as `home-assistant`, `hacs`, `custom-integration`, `weather`, `kma`.
+- After pushing a new tag, create a matching GitHub release for that same version.
+
 ## Manual installation
 
 1. Copy `custom_components/kma_weather` into your Home Assistant config directory.
