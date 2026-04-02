@@ -29,9 +29,17 @@
     "step": {
       "init": {
         "title": "KMA Weather 옵션",
-        "description": "연속 API 실패 허용 횟수를 설정합니다. 허용 범위 내에서는 마지막 정상 데이터를 유지합니다.",
+        "description": "연속 API 실패 허용 횟수를 설정하고, 필요하면 환경정보를 한 종류씩 추가 연결할 수 있습니다.",
         "data": {
-          "max_consecutive_failures": "최대 연속 API 실패 허용 횟수"
+          "max_consecutive_failures": "최대 연속 API 실패 허용 횟수",
+          "env_kind": "환경정보 추가"
+        }
+      },
+      "add_environment": {
+        "title": "환경정보 추가",
+        "description": "{details}",
+        "data": {
+          "env_api_key": "API 키"
         }
       }
     }

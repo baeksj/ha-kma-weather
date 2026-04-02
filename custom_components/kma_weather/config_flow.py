@@ -14,6 +14,8 @@ from .area_lookup import nearest_area_codes
 from .const import (
     CONF_API_KEY,
     CONF_AREA_NO,
+    CONF_ENV_API_KEY,
+    CONF_ENV_KIND,
     CONF_LOCATION_NAME,
     CONF_MAX_CONSECUTIVE_FAILURES,
     CONF_NX,
@@ -125,9 +127,14 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         self.entry = entry
+        self._pending_kind: str | None = None
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
+            if user_input.get(CONF_ENV_KIND):
+                self._pending_kind = user_input[CONF_ENV_KIND]
+                return await self.async_step_add_environment()
+
             max_failures = int(
                 user_input.get(
                     CONF_MAX_CONSECUTIVE_FAILURES,
@@ -145,19 +152,58 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
                 },
             )
 
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_MAX_CONSECUTIVE_FAILURES,
-                    default=int(
-                        self.entry.options.get(
-                            CONF_MAX_CONSECUTIVE_FAILURES,
-                            DEFAULT_MAX_CONSECUTIVE_FAILURES,
-                        )
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=20)),
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=schema, errors={})
+        available = {
+            "uv": "자외선지수 (기상청_생활기상지수 조회서비스(3.0) / getUVIdxV4)",
+            "air_diffusion": "대기확산지수 (기상청_생활기상지수 조회서비스(3.0) / getAirDiffusionIdxV4)",
+        }
+        existing = self.entry.options.get("environment_keys", {})
+        available = {k: v for k, v in available.items() if k not in existing}
 
-    # TODO: add zone-based location picker and coordinate edits here.
+        schema_dict = {
+            vol.Optional(
+                CONF_MAX_CONSECUTIVE_FAILURES,
+                default=int(
+                    self.entry.options.get(
+                        CONF_MAX_CONSECUTIVE_FAILURES,
+                        DEFAULT_MAX_CONSECUTIVE_FAILURES,
+                    )
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=20)),
+        }
+        if available:
+            schema_dict[vol.Optional(CONF_ENV_KIND)] = vol.In(available)
+
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema_dict), errors={})
+
+    async def async_step_add_environment(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        kind = self._pending_kind
+        descriptions = {
+            "uv": "추가 환경정보: 자외선지수\n필요 API: 기상청_생활기상지수 조회서비스(3.0)\n사용 endpoint: getUVIdxV4",
+            "air_diffusion": "추가 환경정보: 대기확산지수\n필요 API: 기상청_생활기상지수 조회서비스(3.0)\n사용 endpoint: getAirDiffusionIdxV4",
+        }
+        if kind is None:
+            return await self.async_step_init()
+
+        existing = dict(self.entry.options.get("environment_keys", {}))
+        if kind in existing:
+            return await self.async_step_init()
+
+        if user_input is not None:
+            existing[kind] = user_input[CONF_ENV_API_KEY]
+            return self.async_create_entry(
+                title="",
+                data={
+                    **self.entry.options,
+                    "environment_keys": existing,
+                },
+            )
+
+        schema = vol.Schema({
+            vol.Required(CONF_ENV_API_KEY): str,
+        })
+        return self.async_show_form(
+            step_id="add_environment",
+            data_schema=schema,
+            errors={},
+            description_placeholders={"details": descriptions.get(kind, kind)},
+        )

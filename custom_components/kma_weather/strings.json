@@ -29,9 +29,17 @@
     "step": {
       "init": {
         "title": "KMA Weather options",
-        "description": "Control how many consecutive KMA API failures are tolerated before the entity becomes unavailable.",
+        "description": "Control failure tolerance and optionally add one environmental data type at a time.",
         "data": {
-          "max_consecutive_failures": "Max consecutive API failures"
+          "max_consecutive_failures": "Max consecutive API failures",
+          "env_kind": "Add environmental data"
+        }
+      },
+      "add_environment": {
+        "title": "Add environmental data",
+        "description": "{details}",
+        "data": {
+          "env_api_key": "API key"
         }
       }
     }

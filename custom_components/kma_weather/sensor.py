@@ -16,13 +16,28 @@ async def async_setup_entry(
 ) -> None:
     runtime = hass.data[DOMAIN][entry.entry_id]
     coordinator = runtime["coordinator"]
-    async_add_entities(
-        [
-            KmaGridSensor(entry, coordinator, runtime),
-            KmaAreaCodeSensor(entry, coordinator, runtime),
-            KmaRegionNameSensor(entry, coordinator, runtime),
-        ]
-    )
+    entities = [
+        KmaGridSensor(entry, coordinator, runtime),
+        KmaAreaCodeSensor(entry, coordinator, runtime),
+        KmaRegionNameSensor(entry, coordinator, runtime),
+    ]
+
+    env_keys = entry.options.get("environment_keys", {})
+    if "uv" in env_keys:
+        entities.append(KmaSimpleEnvSensor(entry, coordinator, runtime, "uv", "KMA UV Index", env_keys["uv"]))
+    if "air_diffusion" in env_keys:
+        entities.append(
+            KmaSimpleEnvSensor(
+                entry,
+                coordinator,
+                runtime,
+                "air_diffusion",
+                "KMA Air Diffusion Index",
+                env_keys["air_diffusion"],
+            )
+        )
+
+    async_add_entities(entities)
 
 
 class _BaseKmaSensor(CoordinatorEntity, SensorEntity):
@@ -84,4 +99,34 @@ class KmaRegionNameSensor(_BaseKmaSensor):
             "level1": self.runtime.get("region_level_1"),
             "level2": self.runtime.get("region_level_2"),
             "level3": self.runtime.get("region_level_3"),
+        }
+
+
+class KmaSimpleEnvSensor(_BaseKmaSensor):
+    def __init__(self, entry, coordinator, runtime, kind: str, name: str, api_key: str):
+        super().__init__(entry, coordinator, runtime, kind, name)
+        self.kind = kind
+        self.api_key = api_key
+        self._attr_available = False
+
+    @property
+    def native_value(self):
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        descriptions = {
+            "uv": {
+                "required_api": "기상청_생활기상지수 조회서비스(3.0)",
+                "endpoint": "getUVIdxV4",
+            },
+            "air_diffusion": {
+                "required_api": "기상청_생활기상지수 조회서비스(3.0)",
+                "endpoint": "getAirDiffusionIdxV4",
+            },
+        }
+        return {
+            "configured": True,
+            "kind": self.kind,
+            **descriptions.get(self.kind, {}),
         }
