@@ -1,12 +1,12 @@
 {
   "domain": "kma_weather",
   "name": "KMA Weather",
-  "codeowners": [],
+  "version": "0.1.0",
+  "documentation": "https://www.data.go.kr/data/15084084/openapi.do",
+  "issue_tracker": "https://github.com/baeksj/ha-kma-weather/issues",
+  "codeowners": ["@baeksj"],
   "config_flow": true,
-  "documentation": "https://www.data.go.kr/",
-  "integration_type": "service",
   "iot_class": "cloud_polling",
-  "loggers": ["custom_components.kma_weather"],
   "requirements": [],
-  "version": "0.1.0"
+  "loggers": ["custom_components.kma_weather"]
 }
