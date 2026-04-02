@@ -19,6 +19,7 @@ DEFAULT_NAME = "KMA Weather"
 DEFAULT_SCAN_INTERVAL = 600
 DEFAULT_MAX_CONSECUTIVE_FAILURES = 3
 KMA_API_BASE = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
+KMA_LIVING_API_BASE = "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4"
 
 ATTR_HOURLY_FORECAST = "hourly_forecast"
 ATTR_DAILY_FORECAST = "daily_forecast"

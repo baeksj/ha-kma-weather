@@ -19,6 +19,8 @@ from .const import (
 )
 from .coordinator import KmaWeatherDataCoordinator
 from .grid import latlon_to_grid
+from .living_api import KmaLivingWeatherApi
+from .living_coordinator import KmaLivingCoordinator
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -50,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data[DOMAIN][entry.entry_id] = {
+    runtime = {
         "api": api,
         "coordinator": coordinator,
         "title": data.get(CONF_LOCATION_NAME) or entry.title,
@@ -59,7 +61,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "region_level_1": data.get("region_level_1"),
         "region_level_2": data.get("region_level_2"),
         "region_level_3": data.get("region_level_3"),
+        "living": {},
     }
+
+    env_keys = entry.options.get("environment_keys", {})
+    area_no = data.get(CONF_AREA_NO)
+    for kind, api_key in env_keys.items():
+        if not area_no:
+            continue
+        living_api = KmaLivingWeatherApi(hass, api_key, str(area_no))
+        living_coordinator = KmaLivingCoordinator(hass, living_api, kind)
+        await living_coordinator.async_config_entry_first_refresh()
+        runtime["living"][kind] = {
+            "api": living_api,
+            "coordinator": living_coordinator,
+        }
+
+    hass.data[DOMAIN][entry.entry_id] = runtime
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True

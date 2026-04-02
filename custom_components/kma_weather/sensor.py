@@ -22,18 +22,17 @@ async def async_setup_entry(
         KmaRegionNameSensor(entry, coordinator, runtime),
     ]
 
-    env_keys = entry.options.get("environment_keys", {})
-    if "uv" in env_keys:
-        entities.append(KmaSimpleEnvSensor(entry, coordinator, runtime, "uv", "KMA UV Index", env_keys["uv"]))
-    if "air_diffusion" in env_keys:
+    living = runtime.get("living", {})
+    if "uv" in living:
+        entities.append(KmaLivingValueSensor(entry, living["uv"]["coordinator"], runtime, "uv", "KMA UV Index"))
+    if "air_diffusion" in living:
         entities.append(
-            KmaSimpleEnvSensor(
+            KmaLivingValueSensor(
                 entry,
-                coordinator,
+                living["air_diffusion"]["coordinator"],
                 runtime,
                 "air_diffusion",
                 "KMA Air Diffusion Index",
-                env_keys["air_diffusion"],
             )
         )
 
@@ -102,16 +101,19 @@ class KmaRegionNameSensor(_BaseKmaSensor):
         }
 
 
-class KmaSimpleEnvSensor(_BaseKmaSensor):
-    def __init__(self, entry, coordinator, runtime, kind: str, name: str, api_key: str):
+class KmaLivingValueSensor(_BaseKmaSensor):
+    def __init__(self, entry, coordinator, runtime, kind: str, name: str):
         super().__init__(entry, coordinator, runtime, kind, name)
         self.kind = kind
-        self.api_key = api_key
-        self._attr_available = False
+        self.coordinator = coordinator
 
     @property
     def native_value(self):
-        return None
+        return self.coordinator.data.get("h0") or self.coordinator.data.get("h3")
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
 
     @property
     def extra_state_attributes(self):
@@ -125,8 +127,11 @@ class KmaSimpleEnvSensor(_BaseKmaSensor):
                 "endpoint": "getAirDiffusionIdxV4",
             },
         }
-        return {
+        attrs = {
             "configured": True,
             "kind": self.kind,
             **descriptions.get(self.kind, {}),
         }
+        for key, value in self.coordinator.data.items():
+            attrs[key] = value
+        return attrs
