@@ -11,7 +11,7 @@ from aiohttp import ClientError
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import KMA_API_BASE
+from .const import DEFAULT_API_TIMEOUT, KMA_API_BASE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class KmaWeatherApi:
         }
         url = f"{KMA_API_BASE}/{endpoint}?{urlencode(params)}"
         try:
-            async with self._session.get(url, timeout=30) as response:
+            async with self._session.get(url, timeout=DEFAULT_API_TIMEOUT) as response:
                 response.raise_for_status()
                 payload = await response.json(content_type=None)
         except (ClientError, TimeoutError, ValueError) as err:

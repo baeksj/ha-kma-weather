@@ -18,6 +18,12 @@ CONF_ENABLED_API_GROUPS = "enabled_api_groups"
 DEFAULT_NAME = "KMA Weather"
 DEFAULT_SCAN_INTERVAL = 600
 DEFAULT_MAX_CONSECUTIVE_FAILURES = 3
+DEFAULT_API_TIMEOUT = 30
+
+KMA_GRID_NX_MIN = 1
+KMA_GRID_NX_MAX = 149
+KMA_GRID_NY_MIN = 1
+KMA_GRID_NY_MAX = 253
 KMA_API_BASE = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
 KMA_LIVING_API_BASE = "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4"
 AIRKOREA_API_BASE = "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc"

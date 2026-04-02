@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 LEVEL1_TO_STN_ID = {
     "서울특별시": "109",
@@ -48,11 +51,25 @@ LEVEL1_TO_REG_ID = {
 
 def midterm_stn_id_for_region(level1: str | None) -> str:
     if not level1:
+        _LOGGER.warning("midterm_stn_id_for_region: level1 is empty, using Seoul default (109)")
         return "108"
-    return LEVEL1_TO_STN_ID.get(level1, "108")
+    stn_id = LEVEL1_TO_STN_ID.get(level1)
+    if stn_id is None:
+        _LOGGER.warning(
+            "midterm_stn_id_for_region: unknown region '%s', using Seoul default (109)", level1
+        )
+        return "108"
+    return stn_id
 
 
 def midterm_reg_id_for_region(level1: str | None) -> str:
     if not level1:
+        _LOGGER.warning("midterm_reg_id_for_region: level1 is empty, using Seoul default (11B10101)")
         return "11B10101"
-    return LEVEL1_TO_REG_ID.get(level1, "11B10101")
+    reg_id = LEVEL1_TO_REG_ID.get(level1)
+    if reg_id is None:
+        _LOGGER.warning(
+            "midterm_reg_id_for_region: unknown region '%s', using Seoul default (11B10101)", level1
+        )
+        return "11B10101"
+    return reg_id

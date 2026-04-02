@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from aiohttp import ClientError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import AIRKOREA_API_BASE, AIRKOREA_API_VERSION
+from .const import AIRKOREA_API_BASE, AIRKOREA_API_VERSION, DEFAULT_API_TIMEOUT
 
 
 class AirKoreaApiError(Exception):
@@ -31,7 +31,7 @@ class AirKoreaApi:
         }
         url = f"{AIRKOREA_API_BASE}/getMsrstnAcctoRltmMesureDnsty?{urlencode(params)}"
         try:
-            async with self._session.get(url, timeout=30) as response:
+            async with self._session.get(url, timeout=DEFAULT_API_TIMEOUT) as response:
                 response.raise_for_status()
                 payload = await response.json(content_type=None)
         except (ClientError, TimeoutError, ValueError) as err:

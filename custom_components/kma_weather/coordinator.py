@@ -35,6 +35,45 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+class _FailureTolerantCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+    """연속 실패 허용 로직을 공통으로 제공하는 베이스 coordinator.
+
+    실패 횟수가 max_consecutive_failures 이하이고 이전 데이터가 있으면
+    UpdateFailed를 raise하지 않고 이전 데이터를 유지한다.
+    """
+
+    def __init__(
+        self,
+        *args: Any,
+        max_consecutive_failures: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self._max_consecutive_failures = max(1, int(max_consecutive_failures))
+        self._consecutive_failures = 0
+
+    async def _fetch(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        try:
+            data = await self._fetch()
+            self._consecutive_failures = 0
+            return data
+        except UpdateFailed as err:
+            self._consecutive_failures += 1
+            if self._consecutive_failures <= self._max_consecutive_failures and self.data is not None:
+                _LOGGER.warning(
+                    "%s: update failed (%d/%d), keeping previous data: %s",
+                    self.name,
+                    self._consecutive_failures,
+                    self._max_consecutive_failures,
+                    err,
+                )
+                return self.data
+            raise
+
+
 PTY_TO_CONDITION = {
     PTY_NONE: None,
     PTY_RAIN: "rainy",
@@ -59,6 +98,7 @@ class KmaWeatherDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         hass: HomeAssistant,
         api: KmaWeatherApi,
         *,
+        config_entry=None,
         max_consecutive_failures: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
     ) -> None:
         super().__init__(
@@ -66,6 +106,7 @@ class KmaWeatherDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER,
             name="KMA Weather",
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            config_entry=config_entry,
         )
         self.api = api
         self._max_consecutive_failures = max(1, int(max_consecutive_failures))
@@ -90,7 +131,7 @@ class KmaWeatherDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }
         except KmaApiError as err:
             self._consecutive_failures += 1
-            if self._consecutive_failures < self._max_consecutive_failures and self.data:
+            if self._consecutive_failures <= self._max_consecutive_failures and self.data:
                 _LOGGER.warning(
                     "KMA API error (%s/%s). Keeping previous state: %s",
                     self._consecutive_failures,

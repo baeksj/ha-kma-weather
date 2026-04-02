@@ -28,6 +28,10 @@ from .const import (
     DEFAULT_MAX_CONSECUTIVE_FAILURES,
     DEFAULT_NAME,
     DOMAIN,
+    KMA_GRID_NX_MAX,
+    KMA_GRID_NX_MIN,
+    KMA_GRID_NY_MAX,
+    KMA_GRID_NY_MIN,
 )
 from .air_station_lookup import nearest_air_station
 from .grid import latlon_to_grid
@@ -112,6 +116,9 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data[CONF_LATITUDE] = float(latitude)
                     data[CONF_LONGITUDE] = float(longitude)
                     nx, ny = latlon_to_grid(float(latitude), float(longitude))
+                    if not (KMA_GRID_NX_MIN <= nx <= KMA_GRID_NX_MAX and KMA_GRID_NY_MIN <= ny <= KMA_GRID_NY_MAX):
+                        errors["base"] = "grid_out_of_range"
+                        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
                     data[CONF_NX] = nx
                     data[CONF_NY] = ny
 

@@ -23,7 +23,8 @@
       "zone_missing_coordinates": "The selected zone does not have latitude/longitude attributes.",
       "area_code_not_found": "Could not map the selected zone coordinates to a KMA area code.",
       "invalid_area_choice": "Choose one of the suggested KMA area candidates.",
-      "air_station_not_found": "Could not map the saved coordinates to a nearby AirKorea station."
+      "air_station_not_found": "Could not map the saved coordinates to a nearby AirKorea station.",
+      "grid_out_of_range": "The zone coordinates are outside the KMA service area (Korean peninsula only)."
     }
   },
   "options": {

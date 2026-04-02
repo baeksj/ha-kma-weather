@@ -56,16 +56,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if nx is None or ny is None:
         nx, ny = latlon_to_grid(latitude, longitude)
 
+    max_failures = int(
+        entry.options.get(CONF_MAX_CONSECUTIVE_FAILURES, DEFAULT_MAX_CONSECUTIVE_FAILURES)
+    )
     api = KmaWeatherApi(hass, data[CONF_API_KEY], int(nx), int(ny))
     coordinator = KmaWeatherDataCoordinator(
         hass,
         api,
-        max_consecutive_failures=int(
-            entry.options.get(
-                CONF_MAX_CONSECUTIVE_FAILURES,
-                DEFAULT_MAX_CONSECUTIVE_FAILURES,
-            )
-        ),
+        config_entry=entry,
+        max_consecutive_failures=max_failures,
     )
     await coordinator.async_config_entry_first_refresh()
 
@@ -95,15 +94,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for kind in ("uv", "air_diffusion"):
             try:
                 living_api = KmaLivingWeatherApi(hass, base_api_key, str(area_no))
-                living_coordinator = KmaLivingCoordinator(hass, living_api, kind)
-                await living_coordinator.async_config_entry_first_refresh()
-                runtime["living"][kind] = {
-                    "api": living_api,
-                    "coordinator": living_coordinator,
-                }
+                living_coordinator = KmaLivingCoordinator(
+                    hass,
+                    living_api,
+                    kind,
+                    config_entry=entry,
+                    max_consecutive_failures=max_failures,
+                )
             except Exception as err:
-                _LOGGER.warning("Failed to set up living weather sensor group '%s': %s", kind, err)
-                runtime["group_status"][f"living:{kind}"] = {"ok": False, "error": str(err)}
+                _LOGGER.warning("Failed to create living weather group '%s': %s", kind, err)
+                continue
+            await living_coordinator.async_refresh()
+            runtime["living"][kind] = {"api": living_api, "coordinator": living_coordinator}
+            if not living_coordinator.last_update_success:
+                _LOGGER.warning(
+                    "Living weather group '%s' initial fetch failed, will retry on next update", kind
+                )
 
     if API_GROUP_LIVING_WEATHER in enabled_groups and runtime["living"]:
         runtime["group_status"][API_GROUP_LIVING_WEATHER] = {"ok": True}
@@ -112,15 +118,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for kind in ("pine", "oak", "weed"):
             try:
                 pollen_api = KmaPollenApi(hass, base_api_key, str(area_no))
-                pollen_coordinator = KmaPollenCoordinator(hass, pollen_api, kind)
-                await pollen_coordinator.async_config_entry_first_refresh()
-                runtime["pollen"][kind] = {
-                    "api": pollen_api,
-                    "coordinator": pollen_coordinator,
-                }
+                pollen_coordinator = KmaPollenCoordinator(
+                    hass,
+                    pollen_api,
+                    kind,
+                    config_entry=entry,
+                    max_consecutive_failures=max_failures,
+                )
             except Exception as err:
-                _LOGGER.warning("Failed to set up pollen sensor group '%s': %s", kind, err)
-                runtime["group_status"][f"pollen:{kind}"] = {"ok": False, "error": str(err)}
+                _LOGGER.warning("Failed to create pollen group '%s': %s", kind, err)
+                continue
+            await pollen_coordinator.async_refresh()
+            runtime["pollen"][kind] = {"api": pollen_api, "coordinator": pollen_coordinator}
+            if not pollen_coordinator.last_update_success:
+                _LOGGER.warning(
+                    "Pollen group '%s' initial fetch failed, will retry on next update", kind
+                )
 
     if API_GROUP_POLLEN in enabled_groups and runtime["pollen"]:
         runtime["group_status"][API_GROUP_POLLEN] = {"ok": True}
@@ -140,16 +153,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         else:
             try:
                 air_api = AirKoreaApi(hass, base_api_key, str(air_station["station_name"]))
-                air_coordinator = AirKoreaCoordinator(hass, air_api)
-                await air_coordinator.async_config_entry_first_refresh()
-                runtime["air_quality"] = {
-                    "api": air_api,
-                    "coordinator": air_coordinator,
-                }
-                runtime["group_status"][API_GROUP_AIR_QUALITY] = {"ok": True}
+                air_coordinator = AirKoreaCoordinator(
+                    hass,
+                    air_api,
+                    config_entry=entry,
+                    max_consecutive_failures=max_failures,
+                )
             except Exception as err:
-                _LOGGER.warning("Failed to set up AirKorea air quality group: %s", err)
+                _LOGGER.warning("Failed to create AirKorea air quality group: %s", err)
                 runtime["group_status"][API_GROUP_AIR_QUALITY] = {"ok": False, "error": str(err)}
+            else:
+                await air_coordinator.async_refresh()
+                runtime["air_quality"] = {"api": air_api, "coordinator": air_coordinator}
+                if not air_coordinator.last_update_success:
+                    _LOGGER.warning(
+                        "AirKorea air quality initial fetch failed, will retry on next update"
+                    )
+                runtime["group_status"][API_GROUP_AIR_QUALITY] = {"ok": True}
 
     if API_GROUP_MIDTERM_FORECAST in enabled_groups:
         if not base_api_key:
@@ -162,18 +182,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 stn_id = midterm_stn_id_for_region(runtime.get("region_level_1"))
                 reg_id = midterm_reg_id_for_region(runtime.get("region_level_1"))
                 midterm_api = KmaMidtermApi(hass, base_api_key, stn_id, reg_id)
-                midterm_coordinator = KmaMidtermCoordinator(hass, midterm_api)
-                await midterm_coordinator.async_config_entry_first_refresh()
+                midterm_coordinator = KmaMidtermCoordinator(
+                    hass,
+                    midterm_api,
+                    config_entry=entry,
+                    max_consecutive_failures=max_failures,
+                )
+            except Exception as err:
+                _LOGGER.warning("Failed to create KMA midterm forecast group: %s", err)
+                runtime["group_status"][API_GROUP_MIDTERM_FORECAST] = {"ok": False, "error": str(err)}
+            else:
+                await midterm_coordinator.async_refresh()
                 runtime["midterm"] = {
                     "api": midterm_api,
                     "coordinator": midterm_coordinator,
                     "stn_id": stn_id,
                     "reg_id": reg_id,
                 }
+                if not midterm_coordinator.last_update_success:
+                    _LOGGER.warning(
+                        "KMA midterm forecast initial fetch failed, will retry on next update"
+                    )
                 runtime["group_status"][API_GROUP_MIDTERM_FORECAST] = {"ok": True}
-            except Exception as err:
-                _LOGGER.warning("Failed to set up KMA midterm forecast group: %s", err)
-                runtime["group_status"][API_GROUP_MIDTERM_FORECAST] = {"ok": False, "error": str(err)}
 
     hass.data[DOMAIN][entry.entry_id] = runtime
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -189,5 +219,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    await hass.config_entries.async_reload(entry.entry_id)
