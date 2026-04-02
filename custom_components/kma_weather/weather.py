@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from homeassistant.components.weather import (
-    ATTR_FORECAST_HOURLY,
-    ATTR_FORECAST_DAILY,
     Forecast,
     WeatherEntity,
     WeatherEntityFeature,
@@ -70,8 +68,8 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return {
-            ATTR_FORECAST_HOURLY: self.coordinator.data.get(ATTR_HOURLY_FORECAST, []),
-            ATTR_FORECAST_DAILY: self.coordinator.data.get(ATTR_DAILY_FORECAST, []),
+            "hourly_forecast": self.coordinator.data.get(ATTR_HOURLY_FORECAST, []),
+            "daily_forecast": self.coordinator.data.get(ATTR_DAILY_FORECAST, []),
             ATTR_GRID: self.coordinator.data.get(ATTR_GRID),
             ATTR_CONSECUTIVE_FAILURES: self.coordinator.data.get(ATTR_CONSECUTIVE_FAILURES, 0),
             ATTR_FAILURE_TOLERANCE: self.coordinator.data.get(ATTR_FAILURE_TOLERANCE),
