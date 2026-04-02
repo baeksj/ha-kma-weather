@@ -7,7 +7,7 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-from .air_station_lookup import nearest_air_station
+from .air_station_lookup import async_nearest_air_station
 from .airkorea_api import AirKoreaApi
 from .airkorea_coordinator import AirKoreaCoordinator
 from .api import KmaWeatherApi
@@ -68,7 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
 
-    air_station = nearest_air_station(latitude, longitude)
+    air_station = await async_nearest_air_station(hass, latitude, longitude)
 
     runtime = {
         "api": api,

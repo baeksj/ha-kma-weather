@@ -1,7 +1,7 @@
 {
   "domain": "kma_weather",
   "name": "KMA Weather",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "documentation": "https://www.data.go.kr/data/15084084/openapi.do",
   "issue_tracker": "https://github.com/baeksj/ha-kma-weather/issues",
   "codeowners": ["@baeksj"],

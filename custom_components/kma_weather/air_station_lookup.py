@@ -6,6 +6,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from homeassistant.core import HomeAssistant
+
 DATA_PATH = Path(__file__).with_name("air_stations.json")
 
 
@@ -27,6 +29,14 @@ def nearest_air_station(latitude: float, longitude: float) -> dict[str, Any] | N
             best = {**item, "geo_distance_km": dist}
             best_dist = dist
     return best
+
+
+async def async_nearest_air_station(
+    hass: HomeAssistant,
+    latitude: float,
+    longitude: float,
+) -> dict[str, Any] | None:
+    return await hass.async_add_executor_job(nearest_air_station, latitude, longitude)
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

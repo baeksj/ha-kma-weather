@@ -11,7 +11,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from .area_lookup import nearest_area_codes
+from .area_lookup import async_nearest_area_codes
 from .const import (
     CONF_API_KEY,
     CONF_AREA_NO,
@@ -33,7 +33,7 @@ from .const import (
     KMA_GRID_NY_MAX,
     KMA_GRID_NY_MIN,
 )
-from .air_station_lookup import nearest_air_station
+from .air_station_lookup import async_nearest_air_station
 from .grid import latlon_to_grid
 
 _LOGGER = logging.getLogger(__name__)
@@ -122,7 +122,12 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data[CONF_NX] = nx
                     data[CONF_NY] = ny
 
-                    candidates = nearest_area_codes(float(latitude), float(longitude), limit=3)
+                    candidates = await async_nearest_area_codes(
+                        self.hass,
+                        float(latitude),
+                        float(longitude),
+                        limit=3,
+                    )
                     if not candidates:
                         errors["base"] = "area_code_not_found"
                     else:
@@ -195,7 +200,7 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
                 )
             )
             enabled_groups = list(user_input.get(CONF_ENABLED_API_GROUPS, []))
-            errors = self._validate_enabled_groups(enabled_groups)
+            errors = await self._validate_enabled_groups(enabled_groups)
             if errors:
                 return self.async_show_form(
                     step_id="init",
@@ -247,7 +252,7 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
         }
         return vol.Schema(schema_dict)
 
-    def _validate_enabled_groups(self, enabled_groups: list[str]) -> dict[str, str]:
+    async def _validate_enabled_groups(self, enabled_groups: list[str]) -> dict[str, str]:
         if API_GROUP_AIR_QUALITY not in enabled_groups:
             return {}
 
@@ -257,7 +262,11 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
             _LOGGER.warning("AirKorea group requested without saved coordinates")
             return {"base": "air_station_not_found"}
 
-        air_station = nearest_air_station(float(latitude), float(longitude))
+        air_station = await async_nearest_air_station(
+            self.hass,
+            float(latitude),
+            float(longitude),
+        )
         if air_station is None:
             return {"base": "air_station_not_found"}
         return {}

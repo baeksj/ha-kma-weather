@@ -6,6 +6,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from homeassistant.core import HomeAssistant
+
 from .grid import latlon_to_grid
 
 DATA_PATH = Path(__file__).with_name("area_codes.json")
@@ -19,6 +21,23 @@ def load_area_codes() -> list[dict[str, Any]]:
 def nearest_area_code(latitude: float, longitude: float) -> dict[str, Any] | None:
     matches = nearest_area_codes(latitude, longitude, limit=1)
     return matches[0] if matches else None
+
+
+async def async_nearest_area_codes(
+    hass: HomeAssistant,
+    latitude: float,
+    longitude: float,
+    limit: int = 3,
+) -> list[dict[str, Any]]:
+    return await hass.async_add_executor_job(nearest_area_codes, latitude, longitude, limit)
+
+
+async def async_nearest_area_code(
+    hass: HomeAssistant,
+    latitude: float,
+    longitude: float,
+) -> dict[str, Any] | None:
+    return await hass.async_add_executor_job(nearest_area_code, latitude, longitude)
 
 
 def nearest_area_codes(latitude: float, longitude: float, limit: int = 3) -> list[dict[str, Any]]:
