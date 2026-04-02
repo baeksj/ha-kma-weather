@@ -1,7 +1,7 @@
 {
   "name": "KMA Weather",
   "country": "KR",
-  "homeassistant": ">=2024.3.0",
+  "homeassistant": "2024.3.0",
   "render_readme": true,
   "content_in_root": false,
   "domains": ["kma_weather"]
