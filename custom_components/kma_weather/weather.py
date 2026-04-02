@@ -67,6 +67,7 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
+        current = self.coordinator.data["current"]
         return {
             "hourly_forecast": self.coordinator.data.get(ATTR_HOURLY_FORECAST, []),
             "daily_forecast": self.coordinator.data.get(ATTR_DAILY_FORECAST, []),
@@ -74,7 +75,14 @@ class KmaWeatherEntity(CoordinatorEntity, WeatherEntity):
             ATTR_CONSECUTIVE_FAILURES: self.coordinator.data.get(ATTR_CONSECUTIVE_FAILURES, 0),
             ATTR_FAILURE_TOLERANCE: self.coordinator.data.get(ATTR_FAILURE_TOLERANCE),
             ATTR_DATA_STALE: self.coordinator.data.get(ATTR_DATA_STALE, False),
-            "raw_current": self.coordinator.data["current"].get("raw", {}),
+            "wind_bearing": current.get("wind_bearing"),
+            "wind_direction": current.get("wind_direction"),
+            "precipitation_1h": current.get("precipitation_1h"),
+            "today_low": current.get("today_low"),
+            "today_high": current.get("today_high"),
+            "forecast_sky": current.get("forecast_sky"),
+            "forecast_pty": current.get("forecast_pty"),
+            "raw_current": current.get("raw", {}),
             "base_times": self.coordinator.data.get("base_times"),
         }
 

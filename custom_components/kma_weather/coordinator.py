@@ -74,9 +74,9 @@ class KmaWeatherDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         try:
             raw = await self.api.async_fetch_all()
-            current = self._normalize_current(raw["current"])
             hourly = self._normalize_hourly(raw["hourly"])
             daily = self._normalize_daily(raw["daily"])
+            current = self._normalize_current(raw["current"], raw["hourly"], raw["daily"])
             self._consecutive_failures = 0
             return {
                 **raw["meta"],
@@ -105,16 +105,32 @@ class KmaWeatherDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 }
             raise UpdateFailed(str(err)) from err
 
-    def _normalize_current(self, items: list[dict]) -> dict:
+    def _normalize_current(self, items: list[dict], hourly_items: list[dict], daily_items: list[dict]) -> dict:
         mapped = {item["category"]: item.get("obsrValue") for item in items if item.get("category")}
         pty = str(mapped.get("PTY", PTY_NONE))
-        sky = str(mapped.get("SKY")) if mapped.get("SKY") is not None else None
+
+        hourly_buckets = self.api.bucket_by_forecast_time(hourly_items)
+        first_hourly = hourly_buckets[sorted(hourly_buckets.keys())[0]] if hourly_buckets else {}
+        hourly_sky = str(first_hourly.get("SKY")) if first_hourly.get("SKY") is not None else None
+        hourly_pty = str(first_hourly.get("PTY", pty or PTY_NONE))
+
+        daily_buckets = self.api.daily_bucket(daily_items)
+        today_key = sorted(daily_buckets.keys())[0] if daily_buckets else None
+        today_bucket = daily_buckets.get(today_key, {}) if today_key else {}
+
+        wind_bearing = self._to_int(mapped.get("VEC"))
         return {
             "temperature": self._to_float(mapped.get("T1H")),
             "humidity": self._to_float(mapped.get("REH")),
             "wind_speed": self._to_float(mapped.get("WSD")),
+            "wind_bearing": wind_bearing,
+            "wind_direction": self._bearing_to_direction(wind_bearing),
             "precipitation_1h": self._to_precip_float(mapped.get("RN1")),
-            "condition": self._condition_from_values(sky, pty),
+            "condition": self._condition_from_values(hourly_sky, hourly_pty),
+            "today_low": self._to_float(today_bucket.get("TMN")),
+            "today_high": self._to_float(today_bucket.get("TMX")),
+            "forecast_sky": hourly_sky,
+            "forecast_pty": hourly_pty,
             "raw": mapped,
         }
 
@@ -214,3 +230,11 @@ class KmaWeatherDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 cleaned = cleaned.split("-", 1)[0].strip()
             value = cleaned
         return KmaWeatherDataCoordinator._to_float(value)
+
+    @staticmethod
+    def _bearing_to_direction(bearing: int | None) -> str | None:
+        if bearing is None:
+            return None
+        directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        idx = int(((bearing + 22.5) % 360) / 45)
+        return directions[idx]
