@@ -27,6 +27,31 @@ from .const import (
 from .grid import latlon_to_grid
 
 
+API_GROUP_DESCRIPTIONS = {
+    "living_weather": (
+        "생활기상지수 조회서비스(3.0) → UV, 대기확산지수 센서 추가"
+    ),
+    "air_quality": (
+        "에어코리아 대기오염정보 조회서비스 → PM10, PM2.5, O3, NO2, CO, SO2, 통합대기환경지수, 측정소 센서 추가"
+    ),
+}
+
+API_GROUP_DETAILS = {
+    "living_weather": (
+        "추가 API: 기상청_생활기상지수 조회서비스(3.0)\n"
+        "추가되는 센서: KMA UV Index, KMA Air Diffusion Index\n"
+        "API 키는 기본 설치 시 입력한 공통 키를 재사용합니다."
+    ),
+    "air_quality": (
+        "추가 API: 에어코리아 대기오염정보 조회서비스\n"
+        "추가되는 센서: AirKorea Station, AirKorea PM10, AirKorea PM2.5, AirKorea O3, AirKorea NO2, "
+        "AirKorea CO, AirKorea SO2, AirKorea Integrated Air Quality Index\n"
+        "측정소는 zone 위도/경도 기준 최근접 대기측정소를 자동 선택합니다.\n"
+        "API 키는 기본 설치 시 입력한 공통 키를 재사용합니다."
+    ),
+}
+
+
 class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
@@ -47,7 +72,6 @@ class KmaWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         if user_input is not None:
-            title = user_input.get(CONF_LOCATION_NAME) or DEFAULT_NAME
             zone_entity_id = user_input.get(CONF_ZONE)
             state = self.hass.states.get(zone_entity_id) if zone_entity_id else None
 
@@ -151,11 +175,8 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
                 },
             )
 
-        available = {
-            "living_weather": "생활기상지수 조회서비스(3.0) → UV, 대기확산지수 센서 추가",
-        }
         existing = self.entry.options.get("enabled_api_groups", [])
-        available = {k: v for k, v in available.items() if k not in existing}
+        available = {k: v for k, v in API_GROUP_DESCRIPTIONS.items() if k not in existing}
 
         schema_dict = {
             vol.Optional(
@@ -175,9 +196,6 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_add_environment(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         kind = self._pending_kind
-        descriptions = {
-            "living_weather": "추가 API: 기상청_생활기상지수 조회서비스(3.0)\n추가되는 센서: KMA UV Index, KMA Air Diffusion Index\nAPI 키는 기본 설치 시 입력한 공통 키를 재사용합니다.",
-        }
         if kind is None:
             return await self.async_step_init()
 
@@ -200,5 +218,5 @@ class KmaWeatherOptionsFlow(config_entries.OptionsFlow):
             step_id="add_environment",
             data_schema=schema,
             errors={},
-            description_placeholders={"details": descriptions.get(kind, kind)},
+            description_placeholders={"details": API_GROUP_DETAILS.get(kind, kind)},
         )

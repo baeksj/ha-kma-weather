@@ -29,14 +29,14 @@
     "step": {
       "init": {
         "title": "KMA Weather options",
-        "description": "Control failure tolerance and optionally add one environmental data type at a time.",
+        "description": "Control failure tolerance and optionally add one API group at a time. The base KMA API key is reused for all supported add-on groups. Group bundles create all related sensors automatically, and unneeded entities can be disabled later in Home Assistant.",
         "data": {
           "max_consecutive_failures": "Max consecutive API failures",
-          "env_kind": "Add environmental data"
+          "env_kind": "Add API group"
         }
       },
       "add_environment": {
-        "title": "Add environmental data",
+        "title": "Add API group",
         "description": "{details}",
         "data": {}
       }

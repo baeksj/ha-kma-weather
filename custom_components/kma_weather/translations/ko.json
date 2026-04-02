@@ -29,14 +29,14 @@
     "step": {
       "init": {
         "title": "KMA Weather 옵션",
-        "description": "연속 API 실패 허용 횟수를 설정하고, 필요하면 환경정보를 한 종류씩 추가 연결할 수 있습니다.",
+        "description": "연속 API 실패 허용 횟수를 설정하고, 필요하면 API 그룹을 한 번에 하나씩 추가할 수 있습니다. 추가 API 그룹도 기본 설치 시 입력한 공통 API 키를 재사용하며, 각 그룹은 관련 센서를 자동 생성합니다. 불필요한 엔티티는 Home Assistant에서 비활성화하면 됩니다.",
         "data": {
           "max_consecutive_failures": "최대 연속 API 실패 허용 횟수",
-          "env_kind": "환경정보 추가"
+          "env_kind": "API 그룹 추가"
         }
       },
       "add_environment": {
-        "title": "환경정보 추가",
+        "title": "API 그룹 추가",
         "description": "{details}",
         "data": {}
       }

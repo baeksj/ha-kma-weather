@@ -5,6 +5,9 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
+from .air_station_lookup import nearest_air_station
+from .airkorea_api import AirKoreaApi
+from .airkorea_coordinator import AirKoreaCoordinator
 from .api import KmaWeatherApi
 from .const import (
     CONF_API_KEY,
@@ -34,10 +37,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = entry.data
     nx = data.get(CONF_NX)
     ny = data.get(CONF_NY)
+    latitude = float(data[CONF_LATITUDE])
+    longitude = float(data[CONF_LONGITUDE])
     if nx is None or ny is None:
-        latitude = data[CONF_LATITUDE]
-        longitude = data[CONF_LONGITUDE]
-        nx, ny = latlon_to_grid(float(latitude), float(longitude))
+        nx, ny = latlon_to_grid(latitude, longitude)
 
     api = KmaWeatherApi(hass, data[CONF_API_KEY], int(nx), int(ny))
     coordinator = KmaWeatherDataCoordinator(
@@ -52,6 +55,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
 
+    air_station = nearest_air_station(latitude, longitude)
+
     runtime = {
         "api": api,
         "coordinator": coordinator,
@@ -62,6 +67,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "region_level_2": data.get("region_level_2"),
         "region_level_3": data.get("region_level_3"),
         "living": {},
+        "air_station": air_station,
+        "air_quality": None,
     }
 
     enabled_groups = entry.options.get("enabled_api_groups", [])
@@ -76,6 +83,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "api": living_api,
                 "coordinator": living_coordinator,
             }
+
+    if air_station and base_api_key and "air_quality" in enabled_groups:
+        air_api = AirKoreaApi(hass, base_api_key, str(air_station["station_name"]))
+        air_coordinator = AirKoreaCoordinator(hass, air_api)
+        await air_coordinator.async_config_entry_first_refresh()
+        runtime["air_quality"] = {
+            "api": air_api,
+            "coordinator": air_coordinator,
+        }
 
     hass.data[DOMAIN][entry.entry_id] = runtime
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
