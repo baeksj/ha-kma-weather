@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KMA Weather",
-        "description": "Enter your KMA API key and choose a zone entity. The integration reads that zone's latitude/longitude and converts it to KMA grid coordinates.",
+        "description": "This base setup requires the KMA Short Forecast API (기상청_단기예보 조회서비스). Enter that API key and choose a zone entity. The integration reads the zone latitude/longitude, converts it to KMA grid coordinates, and then asks you to pick one of the three nearest KMA administrative area candidates.",
         "data": {
           "api_key": "API key",
           "location_name": "Location name",

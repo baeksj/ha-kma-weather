@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KMA Weather",
-        "description": "KMA API 키를 입력하고 zone 엔티티를 선택하세요. 해당 zone의 위도/경도를 읽어 기상청 격자로 자동 변환합니다.",
+        "description": "기본 설치에는 `기상청_단기예보 조회서비스` API 키가 필요합니다. 해당 API 키를 입력하고 zone 엔티티를 선택하세요. zone의 위도/경도를 읽어 기상청 격자로 자동 변환한 뒤, 최근접 KMA 행정구역 후보 3개 중 하나를 고르게 됩니다.",
         "data": {
           "api_key": "API 키",
           "location_name": "위치 이름",

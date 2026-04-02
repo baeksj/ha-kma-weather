@@ -56,6 +56,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "title": data.get(CONF_LOCATION_NAME) or entry.title,
         "grid": {"nx": int(nx), "ny": int(ny)},
         "area_no": data.get(CONF_AREA_NO),
+        "region_level_1": data.get("region_level_1"),
+        "region_level_2": data.get("region_level_2"),
+        "region_level_3": data.get("region_level_3"),
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))

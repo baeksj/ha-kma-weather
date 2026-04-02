@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 DOMAIN = "kma_weather"
-PLATFORMS = ["weather"]
+PLATFORMS = ["weather", "sensor"]
 
 CONF_API_KEY = "api_key"
 CONF_LATITUDE = "latitude"
