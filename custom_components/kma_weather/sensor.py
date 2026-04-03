@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -11,6 +12,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -113,11 +116,22 @@ async def async_setup_entry(
     air_quality = runtime.get("air_quality")
     if air_quality:
         air_coordinator = air_quality["coordinator"]
-        entities.append(KmaAirStationSensor(entry, air_coordinator, runtime))
-        entities.extend(
-            KmaAirQualityValueSensor(entry, air_coordinator, runtime, description)
-            for description in AIR_QUALITY_SENSORS
+        station_name = (runtime.get("air_station") or {}).get("station_name")
+        air_entities = [
+            KmaAirStationSensor(entry, air_coordinator, runtime),
+            *[
+                KmaAirQualityValueSensor(entry, air_coordinator, runtime, description)
+                for description in AIR_QUALITY_SENSORS
+            ],
+        ]
+        _LOGGER.warning(
+            "AirKorea sensor setup for entry=%s station=%s data_keys=%s prepared=%s",
+            entry.entry_id,
+            station_name,
+            sorted(list((air_coordinator.data or {}).keys())),
+            [entity.unique_id for entity in air_entities],
         )
+        entities.extend(air_entities)
 
     midterm = runtime.get("midterm")
     if midterm:
